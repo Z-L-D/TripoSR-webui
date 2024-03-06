@@ -1,2 +1,2 @@
-# TriposR-webui
-A TriposR implementation for WebUI
+# TripoSR-webui
+A TripoSR implementation for WebUI
