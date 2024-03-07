@@ -55,7 +55,7 @@ model = TSR.from_pretrained(
 model.renderer.set_chunk_size(8192)
 model.to(device)
 
-rembg_session = new_session(model_name="dis_general_use")
+rembg_session = rembg.new_session()
 
 def check_input_image(input_image):
     if input_image is None:
