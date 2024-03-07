@@ -9,7 +9,7 @@ from PIL.Image import Image as PILImage
 from .base import BaseSession
 
 
-class DisSession(BaseSession):
+class DisSessionGeneralUse(BaseSession):
     def predict(self, img: PILImage, *args, **kwargs) -> List[PILImage]:
         """
         Predicts the mask image for the input image.

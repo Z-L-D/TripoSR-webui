@@ -40,21 +40,15 @@ triposr_model_filenames = []
 def get_rembg_model_choices():
     # List of available models. This could be dynamic based on downloaded models
     return [
+        "dis_anime",
+        "dis_general_use",
+        "sam",
+        "silueta",
+        "u2net_cloth_seg", 
+        "u2net_human_seg", 
         "u2net", 
         "u2netp", 
-        "u2net_human_seg", 
-        "u2net_cloth_seg", 
-        "silueta",
-        "dis_general_use",
-        "dis_anime",
-        "sam",
     ]
-
-rembg_model_dropdown = gr.Dropdown(
-    label="RemBG Model",
-    choices=get_rembg_model_choices(),
-    value="dis_general_use",  # Default value
-)
 
 def update_model_filenames():
     global triposr_model_filenames
@@ -83,6 +77,7 @@ def check_input_image(input_image):
 
 def preprocess(
     input_image, 
+    rembg_model,
     do_remove_background, 
     foreground_ratio,
     alpha_matting=False,
@@ -100,8 +95,7 @@ def preprocess(
         image = input_image.convert("RGB")
         image = remove_background(
             image,
-            # rembg_session,
-            rembg.new_session(model_name="dis_general_use"),
+            rembg.new_session(model_name=rembg_model),
             alpha_matting=alpha_matting,
             alpha_matting_foreground_threshold=alpha_matting_foreground_threshold,
             alpha_matting_background_threshold=alpha_matting_background_threshold,
@@ -231,6 +225,7 @@ def on_ui_tabs():
                 fn=preprocess,
                 inputs=[
                     input_image, 
+                    rembg_model_dropdown,
                     do_remove_background, 
                     foreground_ratio,
                     alpha_matting,

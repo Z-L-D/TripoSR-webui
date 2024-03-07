@@ -12,7 +12,7 @@ from .dis_anime import DisSession
 sessions_class.append(DisSession)
 sessions_names.append(DisSession.name())
 
-from .dis_general_use import DisSession as DisSessionGeneralUse
+from .dis_general_use import DisSessionGeneralUse
 
 sessions_class.append(DisSessionGeneralUse)
 sessions_names.append(DisSessionGeneralUse.name())

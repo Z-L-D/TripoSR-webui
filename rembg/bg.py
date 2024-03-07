@@ -258,7 +258,7 @@ def remove(
     img = fix_image_orientation(img)
 
     if session is None:
-        session = new_session("dis_general_use", *args, **kwargs)
+        session = new_session("DisSessionGeneralUse", *args, **kwargs)
 
     masks = session.predict(img, *args, **kwargs)
     cutouts = []
