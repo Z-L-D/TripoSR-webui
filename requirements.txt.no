@@ -1,0 +1,4 @@
+trimesh==4.0.5
+rembg
+imageio[ffmpeg]
+git+https://github.com/tatsy/torchmcubes.git

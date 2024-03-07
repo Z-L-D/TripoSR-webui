@@ -33,6 +33,11 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
+
+model_root = os.path.join(models_path, 'TripoSR')
+os.makedirs(model_root, exist_ok=True)
+model_filenames = []
+
 def update_model_filenames():
     global model_filenames
     model_filenames = [
@@ -40,6 +45,7 @@ def update_model_filenames():
         shared.walk_files(model_root, allowed_extensions=[".pt", ".ckpt", ".safetensors"])
     ]
     return model_filenames
+
 
 @torch.inference_mode()
 @torch.no_grad()
@@ -115,6 +121,16 @@ def on_ui_tabs():
                         elem_id="content_image",
                     )
                     processed_image = gr.Image(label="Processed Image", interactive=False)
+
+                with gr.Row():
+                    filename = gr.Dropdown(label="TripoSR Checkpoint Filename",
+                                           choices=model_filenames,
+                                           value=model_filenames[0] if len(model_filenames) > 0 else None)
+                    refresh_button = ToolButton(value=refresh_symbol, tooltip="Refresh")
+                    refresh_button.click(
+                        fn=lambda: gr.update(choices=update_model_filenames),
+                        inputs=[], outputs=filename)
+
                 with gr.Row():
                     with gr.Group():
                         do_remove_background = gr.Checkbox(
@@ -141,16 +157,28 @@ def on_ui_tabs():
                             value=8192,
                             step=128,
                         )
+
                 with gr.Row():
                     submit = gr.Button("Generate", elem_id="generate", variant="primary")
+
             with gr.Column():
                 output_model = gr.Model3D(
                     label="Output Model",
                     interactive=False,
                 )
+            
+            submit.click(fn=check_input_image, inputs=[input_image]).success(
+                fn=preprocess,
+                inputs=[input_image, do_remove_background, foreground_ratio],
+                outputs=[processed_image],
+            ).success(
+                fn=generate,
+                inputs=[processed_image],
+                outputs=[output_model],
+            )
 
     return [(model_block, "TripoSR", "TripoSR")]
 
 
-# update_model_filenames()
+update_model_filenames()
 script_callbacks.on_ui_tabs(on_ui_tabs)

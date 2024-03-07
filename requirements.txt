@@ -1,3 +1,0 @@
-trimesh==4.0.5
-rembg
-imageio[ffmpeg]
