@@ -42,7 +42,7 @@ def get_rembg_model_choices():
     return [
         "dis_anime",
         "dis_general_use",
-        "sam",
+        "sam", #!- FIXME !!!!!!!!!! not currently working
         "silueta",
         "u2net_cloth_seg", 
         "u2net_human_seg", 
