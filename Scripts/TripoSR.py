@@ -37,6 +37,25 @@ model_root = os.path.join(models_path, 'TripoSR')
 os.makedirs(model_root, exist_ok=True)
 triposr_model_filenames = []
 
+def get_rembg_model_choices():
+    # List of available models. This could be dynamic based on downloaded models
+    return [
+        "u2net", 
+        "u2netp", 
+        "u2net_human_seg", 
+        "u2net_cloth_seg", 
+        "silueta",
+        "dis_general_use",
+        "dis_anime",
+        "sam",
+    ]
+
+rembg_model_dropdown = gr.Dropdown(
+    label="RemBG Model",
+    choices=get_rembg_model_choices(),
+    value="dis_general_use",  # Default value
+)
+
 def update_model_filenames():
     global triposr_model_filenames
     triposr_model_filenames = [
@@ -55,7 +74,7 @@ model = TSR.from_pretrained(
 model.renderer.set_chunk_size(8192)
 model.to(device)
 
-rembg_session = rembg.new_session()
+# rembg_session = rembg.new_session(model_name="dis_general_use")
 
 def check_input_image(input_image):
     if input_image is None:
@@ -81,7 +100,8 @@ def preprocess(
         image = input_image.convert("RGB")
         image = remove_background(
             image,
-            rembg_session,
+            # rembg_session,
+            rembg.new_session(model_name="dis_general_use"),
             alpha_matting=alpha_matting,
             alpha_matting_foreground_threshold=alpha_matting_foreground_threshold,
             alpha_matting_background_threshold=alpha_matting_background_threshold,
@@ -121,6 +141,11 @@ def on_ui_tabs():
                 with gr.Row():
                     with gr.Group():
                         gr.Markdown("### **Preprocess Settings**\n")
+                        rembg_model_dropdown = gr.Dropdown(
+                            label="RemBG Model",
+                            choices=get_rembg_model_choices(),
+                            value="dis_general_use",  # Default value
+                        )
                         do_remove_background = gr.Checkbox(
                             label="Remove Background", value=True
                         )
