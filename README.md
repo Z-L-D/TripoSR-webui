@@ -1,7 +1,7 @@
 # TripoSR-webui
 A TripoSR implementation for WebUI
 
-![](https://github.com/Z-L-D/TripoSR-webui/blob/main/triposr-webui.png | width=100)
+![](triposr-webui.png)
 
 This is still a few revisions away from being releasable but it works in its current state. For anyone that wants to try this out, just git clone or download it into your extensions directory of webui. You will also need to remove the .no extension from install.py.no and requirements.txt.no. Following this, it should download the necessary components to start webui. Models will download when they are run for the first time. 
 
