@@ -136,7 +136,7 @@ def on_ui_tabs():
                     with gr.Group():
                         gr.Markdown("### **Preprocess Settings**\n")
                         rembg_model_dropdown = gr.Dropdown(
-                            label="RemBG Model",
+                            label="Cutout Model",
                             choices=get_rembg_model_choices(),
                             value="dis_general_use",  # Default value
                         )
@@ -175,6 +175,8 @@ def on_ui_tabs():
                             value=0,
                             step=1,
                         )
+                with gr.Row():
+                    submit_preprocess = gr.Button("Preprocess Only", elem_id="preprocess", variant="secondary")
                 gr.Markdown("\n")
                 with gr.Row():
                     with gr.Group():
@@ -218,6 +220,23 @@ def on_ui_tabs():
                     label="Output Model",
                     interactive=False,
                 )
+
+            submit_preprocess.click(
+                fn=check_input_image, inputs=[input_image]
+            ).success(
+                fn=preprocess,
+                inputs=[
+                    input_image, 
+                    rembg_model_dropdown,
+                    do_remove_background, 
+                    foreground_ratio,
+                    alpha_matting,
+                    alpha_matting_foreground_threshold,
+                    alpha_matting_background_threshold,
+                    alpha_matting_erode_size
+                ],
+                outputs=[processed_image]
+            )
             
             submit.click(
                 fn=check_input_image, inputs=[input_image]
