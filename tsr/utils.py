@@ -400,17 +400,30 @@ def get_spherical_cameras(
 
 
 def remove_background(
-    image: PIL.Image.Image,
-    rembg_session: Any = None,
-    force: bool = False,
-    **rembg_kwargs,
-) -> PIL.Image.Image:
+    image,
+    rembg_session=None,
+    bgcolor=None,
+    alpha_matting=False,
+    alpha_matting_foreground_threshold=240,
+    alpha_matting_background_threshold=10,
+    alpha_matting_erode_size=10,
+    **rembg_kwargs
+):
     do_remove = True
     if image.mode == "RGBA" and image.getextrema()[3][0] < 255:
         do_remove = False
     do_remove = do_remove or force
     if do_remove:
-        image = rembg.remove(image, session=rembg_session, **rembg_kwargs)
+        image = rembg.remove(
+            image,
+            session=rembg_session,
+            bgcolor=bgcolor,
+            alpha_matting=alpha_matting,
+            alpha_matting_foreground_threshold=alpha_matting_foreground_threshold,
+            alpha_matting_background_threshold=alpha_matting_background_threshold,
+            alpha_matting_erode_size=alpha_matting_erode_size,
+            **rembg_kwargs
+        )
     return image
 
 

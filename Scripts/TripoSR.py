@@ -81,7 +81,15 @@ def check_input_image(input_image):
         raise gr.Error("No image uploaded!")
 
 
-def preprocess(input_image, do_remove_background, foreground_ratio):
+def preprocess(
+    input_image, 
+    do_remove_background, 
+    foreground_ratio,
+    alpha_matting=False,
+    alpha_matting_foreground_threshold=240,
+    alpha_matting_background_threshold=10,
+    alpha_matting_erode_size=10
+):
     def fill_background(image):
         image = np.array(image).astype(np.float32) / 255.0
         image = image[:, :, :3] * image[:, :, 3:4] + (1 - image[:, :, 3:4]) * 0.5
@@ -90,7 +98,14 @@ def preprocess(input_image, do_remove_background, foreground_ratio):
 
     if do_remove_background:
         image = input_image.convert("RGB")
-        image = remove_background(image, rembg_session)
+        image = remove_background(
+            image,
+            rembg_session,
+            alpha_matting=alpha_matting,
+            alpha_matting_foreground_threshold=alpha_matting_foreground_threshold,
+            alpha_matting_background_threshold=alpha_matting_background_threshold,
+            alpha_matting_erode_size=alpha_matting_erode_size
+        )
         image = resize_foreground(image, foreground_ratio)
         image = fill_background(image)
     else:
@@ -100,9 +115,9 @@ def preprocess(input_image, do_remove_background, foreground_ratio):
     return image
 
 
-def generate(image):
+def generate(image, resolution, threshold):
     scene_codes = model(image, device=device)
-    mesh = model.extract_mesh(scene_codes)[0]
+    mesh = model.extract_mesh(scene_codes, resolution=int(resolution), threshold=float(threshold))[0]
     mesh = to_gradio_3d_orientation(mesh)
     mesh_path = tempfile.NamedTemporaryFile(suffix=".obj", delete=False)
     mesh.export(mesh_path.name)
@@ -123,25 +138,52 @@ def on_ui_tabs():
                     processed_image = gr.Image(label="Processed Image", interactive=False)
 
                 with gr.Row():
-                    filename = gr.Dropdown(label="TripoSR Checkpoint Filename",
-                                           choices=model_filenames,
-                                           value=model_filenames[0] if len(model_filenames) > 0 else None)
-                    refresh_button = ToolButton(value=refresh_symbol, tooltip="Refresh")
-                    refresh_button.click(
-                        fn=lambda: gr.update(choices=update_model_filenames),
-                        inputs=[], outputs=filename)
-
-                with gr.Row():
                     with gr.Group():
+                        gr.Markdown("### **Preprocess Settings**\n")
                         do_remove_background = gr.Checkbox(
                             label="Remove Background", value=True
                         )
                         foreground_ratio = gr.Slider(
-                            label="Foreground Ratio",
+                            label="Subject Zoom",
                             minimum=0.5,
                             maximum=1.0,
                             value=0.85,
                             step=0.05,
+                        )
+                        alpha_matting = gr.Checkbox(
+                            label="Enable Alpha Matting", value=False
+                        )
+                        alpha_matting_foreground_threshold = gr.Slider(
+                            label="Alpha Matting Foreground Threshold",
+                            minimum=0,
+                            maximum=255,
+                            value=240,
+                            step=1,
+                        )
+                        alpha_matting_background_threshold = gr.Slider(
+                            label="Alpha Matting Background Threshold",
+                            minimum=0,
+                            maximum=255,
+                            value=10,
+                            step=1,
+                        )
+                        alpha_matting_erode_size = gr.Slider(
+                            label="Alpha Matting Erode Size",
+                            minimum=0,
+                            maximum=50,
+                        )
+                gr.Markdown("\n")
+                with gr.Row():
+                    with gr.Group():
+                        gr.Markdown("### **Render Settings**\n")
+                        filename = gr.Dropdown(
+                            label="TripoSR Checkpoint Filename",
+                            choices=model_filenames,
+                            value=model_filenames[0] if len(model_filenames) > 0 else None)
+                        refresh_button = ToolButton(value=refresh_symbol, tooltip="Refresh")
+                        refresh_button.click(
+                            fn=lambda: gr.update(choices=update_model_filenames),
+                            inputs=[], outputs=filename
                         )
                         resolution = gr.Slider(
                             label="Resolution",
@@ -149,6 +191,13 @@ def on_ui_tabs():
                             maximum=512,
                             value=256,
                             step=16,
+                        )
+                        threshold = gr.Slider(
+                            label="Threshold",
+                            minimum=0,
+                            maximum=100,
+                            value=25,
+                            step=0.1,
                         )
                         chunking = gr.Slider(
                             label="Chunking",
@@ -167,14 +216,24 @@ def on_ui_tabs():
                     interactive=False,
                 )
             
-            submit.click(fn=check_input_image, inputs=[input_image]).success(
+            submit.click(
+                fn=check_input_image, inputs=[input_image]
+            ).success(
                 fn=preprocess,
-                inputs=[input_image, do_remove_background, foreground_ratio],
-                outputs=[processed_image],
+                inputs=[
+                    input_image, 
+                    do_remove_background, 
+                    foreground_ratio,
+                    alpha_matting,
+                    alpha_matting_foreground_threshold,
+                    alpha_matting_background_threshold,
+                    alpha_matting_erode_size
+                ],
+                outputs=[processed_image]
             ).success(
                 fn=generate,
-                inputs=[processed_image],
-                outputs=[output_model],
+                inputs=[processed_image, resolution, threshold],
+                outputs=[output_model]
             )
 
     return [(model_block, "TripoSR", "TripoSR")]
