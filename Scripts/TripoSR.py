@@ -1,3 +1,7 @@
+import sys
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
+
 import torch
 import gradio as gr
 import os
@@ -11,25 +15,23 @@ from modules import shared
 
 from modules_forge.forge_util import numpy_to_pytorch, pytorch_to_numpy
 from ldm_patched.modules.sd import load_checkpoint_guess_config
-from ldm_patched.contrib.external_stable3d import StableZero123_Conditioning
-from ldm_patched.contrib.external import KSampler, VAEDecode
 
-# import logging
-# import tempfile
-# import time
+import logging
+import tempfile
+import time
 
-# import numpy as np
-# import rembg
-# from PIL import Image
+import numpy as np
+import rembg
+from PIL import Image
 # from functools import partial
 
-# from tsr.system import TSR
-# from tsr.utils import remove_background, resize_foreground, to_gradio_3d_orientation
+from tsr.system import TSR
+from tsr.utils import remove_background, resize_foreground, to_gradio_3d_orientation
 
-# if torch.cuda.is_available():
-#     device = "cuda:0"
-# else:
-#     device = "cpu"
+if torch.cuda.is_available():
+    device = "cuda:0"
+else:
+    device = "cpu"
 
 def update_model_filenames():
     global model_filenames
@@ -56,49 +58,49 @@ def predict(filename, width, height, batch_size, elevation, azimuth,
     outputs = pytorch_to_numpy(output_pixels)
     return outputs
 
-# model = TSR.from_pretrained(
-#     "stabilityai/TripoSR",
-#     config_name="config.yaml",
-#     weight_name="model.ckpt",
-# )
+model = TSR.from_pretrained(
+    "stabilityai/TripoSR",
+    config_name="config.yaml",
+    weight_name="model.ckpt",
+)
 
-# # adjust the chunk size to balance between speed and memory usage
-# model.renderer.set_chunk_size(8192)
-# model.to(device)
+# adjust the chunk size to balance between speed and memory usage
+model.renderer.set_chunk_size(8192)
+model.to(device)
 
-# rembg_session = rembg.new_session()
+rembg_session = rembg.new_session()
 
-# def check_input_image(input_image):
-#     if input_image is None:
-#         raise gr.Error("No image uploaded!")
-
-
-# def preprocess(input_image, do_remove_background, foreground_ratio):
-#     def fill_background(image):
-#         image = np.array(image).astype(np.float32) / 255.0
-#         image = image[:, :, :3] * image[:, :, 3:4] + (1 - image[:, :, 3:4]) * 0.5
-#         image = Image.fromarray((image * 255.0).astype(np.uint8))
-#         return image
-
-#     if do_remove_background:
-#         image = input_image.convert("RGB")
-#         image = remove_background(image, rembg_session)
-#         image = resize_foreground(image, foreground_ratio)
-#         image = fill_background(image)
-#     else:
-#         image = input_image
-#         if image.mode == "RGBA":
-#             image = fill_background(image)
-#     return image
+def check_input_image(input_image):
+    if input_image is None:
+        raise gr.Error("No image uploaded!")
 
 
-# def generate(image):
-#     scene_codes = model(image, device=device)
-#     mesh = model.extract_mesh(scene_codes)[0]
-#     mesh = to_gradio_3d_orientation(mesh)
-#     mesh_path = tempfile.NamedTemporaryFile(suffix=".obj", delete=False)
-#     mesh.export(mesh_path.name)
-#     return mesh_path.name
+def preprocess(input_image, do_remove_background, foreground_ratio):
+    def fill_background(image):
+        image = np.array(image).astype(np.float32) / 255.0
+        image = image[:, :, :3] * image[:, :, 3:4] + (1 - image[:, :, 3:4]) * 0.5
+        image = Image.fromarray((image * 255.0).astype(np.uint8))
+        return image
+
+    if do_remove_background:
+        image = input_image.convert("RGB")
+        image = remove_background(image, rembg_session)
+        image = resize_foreground(image, foreground_ratio)
+        image = fill_background(image)
+    else:
+        image = input_image
+        if image.mode == "RGBA":
+            image = fill_background(image)
+    return image
+
+
+def generate(image):
+    scene_codes = model(image, device=device)
+    mesh = model.extract_mesh(scene_codes)[0]
+    mesh = to_gradio_3d_orientation(mesh)
+    mesh_path = tempfile.NamedTemporaryFile(suffix=".obj", delete=False)
+    mesh.export(mesh_path.name)
+    return mesh_path.name
 
 def on_ui_tabs():
     with gr.Blocks() as model_block:
