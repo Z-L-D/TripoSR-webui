@@ -11,7 +11,6 @@ Current potential issues:
 * The sam masking filter is not working at this time
 
 Future updates coming:
-* A button to send txt2img or img2img generations into TripoSR
 * A button to save the current 3D view
 * A button to send the current 3D view to img2img
 * Provide the generated cutout mask to eventually perform a background recovery in img2img inpainting
