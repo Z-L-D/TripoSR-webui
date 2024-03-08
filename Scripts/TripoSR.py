@@ -255,24 +255,48 @@ def on_ui_tabs():
                                 let babylonCanvasScript = document.createElement('script');
                                 babylonCanvasScript.innerHTML = `
                                     var canvas = document.getElementById('babylonCanvas');
+                                    canvas.addEventListener('wheel', function(event) {
+                                        event.preventDefault();
+                                    }, { passive: false });
+                                 
                                     var engine = new BABYLON.Engine(canvas, true);
+                                 
                                     var createScene = function() {
                                         var scene = new BABYLON.Scene(engine);
                                         scene.clearColor = new BABYLON.Color3.White();
-                                        var camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene);
+                                 
+                                        var camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene, 0.1, 10000);
                                         camera.attachControl(canvas, true);
+                                        camera.wheelPrecision = 50;
+                                 
                                         var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-                                        light.intensity = 0.7;
+                                        light.intensity = 0.4;
+                                 
                                         // Load the OBJ file
                                         BABYLON.SceneLoader.ImportMesh("", "", "file=extensions/TriposR-webui/test.obj", scene, function (newMeshes) {
                                             camera.target = newMeshes[0];
+                                            
+                                            // Define your desired scale factor
+                                            var scaleFactor = 8; // Example: Scale up by a factor of 2
+
+                                            // Apply a material to all loaded meshes that uses vertex colors
+                                            newMeshes.forEach(mesh => {
+                                                var vertexColorMaterial = new BABYLON.StandardMaterial("vertexColorMaterial", scene);
+                                                vertexColorMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1); // White, assuming vertex colors are used
+                                                vertexColorMaterial.specularColor = new BABYLON.Color3(0, 0, 0); // Non-shiny surface
+                                                mesh.material = vertexColorMaterial;
+                                                mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
+                                            });
                                         });
+                                 
                                         return scene;
                                     };
+                                 
                                     var scene = createScene();
                                     engine.runRenderLoop(function() {
                                         scene.render();
                                     });
+                                 
                                     window.addEventListener('resize', function() {
                                         engine.resize();
                                     });
