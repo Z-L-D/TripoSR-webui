@@ -208,7 +208,7 @@ def on_ui_tabs():
                             value=25,
                             step=0.1,
                         )
-                        chunking = gr.Slider(
+                        chunking = gr.Slider( #- FIXME - Currently does nothing. Does it actually do anything at all? I don't know. It doesn't appear to affect much in tests.
                             label="Chunking",
                             minimum=128,
                             maximum=16384,
@@ -248,13 +248,40 @@ def on_ui_tabs():
                                  
                         let babylon_script = document.createElement('script');       
                         babylon_script.src = 'https://cdn.babylonjs.com/babylon.js';
-                        babylon_script.onload = function(){};    
+                        babylon_script.onload = function(){
+                            let babylon_loaders_script = document.createElement('script');       
+                            babylon_loaders_script.src = 'https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js';
+                            babylon_loaders_script.onload = function(){
+                                let babylonCanvasScript = document.createElement('script');
+                                babylonCanvasScript.innerHTML = `
+                                    var canvas = document.getElementById('babylonCanvas');
+                                    var engine = new BABYLON.Engine(canvas, true);
+                                    var createScene = function() {
+                                        var scene = new BABYLON.Scene(engine);
+                                        scene.clearColor = new BABYLON.Color3.White();
+                                        var camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene);
+                                        camera.attachControl(canvas, true);
+                                        var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+                                        light.intensity = 0.7;
+                                        // Load the OBJ file
+                                        BABYLON.SceneLoader.ImportMesh("", "", "file=extensions/TriposR-webui/test.obj", scene, function (newMeshes) {
+                                            camera.target = newMeshes[0];
+                                        });
+                                        return scene;
+                                    };
+                                    var scene = createScene();
+                                    engine.runRenderLoop(function() {
+                                        scene.render();
+                                    });
+                                    window.addEventListener('resize', function() {
+                                        engine.resize();
+                                    });
+                                `
+                                document.head.appendChild(babylonCanvasScript);
+                            };    
+                            document.head.appendChild(babylon_loaders_script);
+                        };    
                         document.head.appendChild(babylon_script);
-                                 
-                        let babylon_loaders_script = document.createElement('script');       
-                        babylon_loaders_script.src = 'https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js';
-                        babylon_loaders_script.onload = function(){};    
-                        document.head.appendChild(babylon_loaders_script);
                                  
                         let babylonCanvasStyle = document.createElement('style');
                         babylonCanvasStyle.innerHTML = `
@@ -265,46 +292,8 @@ def on_ui_tabs():
                             }
                         `
                         document.head.appendChild(babylonCanvasStyle);
-                                 
-                        let babylonCanvasScript = document.createElement('script');
-                        babylonCanvasScript.innerHTML = `
-                            window.addEventListener('DOMContentLoaded', function() {
-                                var canvas = document.getElementById('renderCanvas');
-                                var engine = new BABYLON.Engine(canvas, true);
-
-                                var createScene = function() {
-                                    var scene = new BABYLON.Scene(engine);
-                                    scene.clearColor = new BABYLON.Color3.White();
-
-                                    var camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene);
-                                    camera.attachControl(canvas, true);
-
-                                    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-                                    light.intensity = 0.7;
-
-                                    // Load the OBJ file
-                                    BABYLON.SceneLoader.ImportMesh("", "", "your-obj-file-path.obj", scene, function (newMeshes) {
-                                        camera.target = newMeshes[0];
-                                    });
-
-                                    return scene;
-                                };
-
-                                var scene = createScene();
-
-                                engine.runRenderLoop(function() {
-                                    scene.render();
-                                });
-
-                                window.addEventListener('resize', function() {
-                                    engine.resize();
-                                });
-                            });
-                        `
-                        document.head.appendChild(babylonCanvasScript);
                     }
                 ''')
-                #! FIXME -- Uncaught TypeError: d.FlowGraphSceneReadyEventBlock is undefined
 
             submit_preprocess.click(
                 fn=check_input_image, inputs=[input_image]
