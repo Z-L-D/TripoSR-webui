@@ -230,6 +230,7 @@ def on_ui_tabs():
                     <button id="my_btn">Hello</button>
                     <div id="result"></div>
                     <canvas id="babylonCanvas"></canvas>
+                    <button id="exportToPng">Export to PNG</button>
                 ''')
                 model_block.load(_js = '''
                     function test() {                                
@@ -250,12 +251,13 @@ def on_ui_tabs():
                                     }, { passive: false });
                                  
                                     var engine = new BABYLON.Engine(canvas, true);
+                                    var camera; 
                                  
                                     var createScene = function() {
                                         var scene = new BABYLON.Scene(engine);
                                         scene.clearColor = new BABYLON.Color3.White();
                                  
-                                        var camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene, 0.1, 10000);
+                                        camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene, 0.1, 10000);
                                         camera.attachControl(canvas, true);
                                         camera.wheelPrecision = 50;
                                  
@@ -295,6 +297,17 @@ def on_ui_tabs():
                                  
                                     window.addEventListener('resize', function() {
                                         engine.resize(); 
+                                    });
+                                 
+                                    // Export to PNG button functionality
+                                    document.getElementById('exportToPng').addEventListener('click', function() {
+                                        BABYLON.Tools.CreateScreenshotUsingRenderTarget(engine, camera, { width: 1024, height: 768 }, function(data) {
+                                            // Create a link and set the URL as the data returned from CreateScreenshot
+                                            var link = document.createElement('a');
+                                            link.download = 'scene.png';
+                                            link.href = data;
+                                            link.click();
+                                        });
                                     });
                                 `
                                 document.head.appendChild(babylonCanvasScript);
