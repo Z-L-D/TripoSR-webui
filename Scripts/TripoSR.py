@@ -326,7 +326,6 @@ def on_ui_tabs():
                     }
                 ''') 
                 #- FIXME - Currently suffering from low resolution because this loads before the entire layout is complete. When the window is adjusted, it goes to full resolution.
-                #- FIXME - Objects currently are not being rendered with vertex colors/textures
 
             submit_preprocess.click(
                 fn=check_input_image, inputs=[input_image]
