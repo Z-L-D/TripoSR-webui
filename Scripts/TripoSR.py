@@ -232,20 +232,7 @@ def on_ui_tabs():
                     <canvas id="babylonCanvas"></canvas>
                 ''')
                 model_block.load(_js = '''
-                    function test() {
-                        let jq_script = document.createElement('script');
-                        jq_script.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
-                        jq_script.onload = function() {
-                            console.log('jQuery loaded successfully!');
-                            // Add your jQuery code here
-                            $(function() {
-                                $("#my_btn").click(function() {
-                                    $("#result").text("Button clicked!");
-                                });
-                            });
-                        };
-                        document.head.appendChild(jq_script);
-                                 
+                    function test() {                                
                         let babylon_script = document.createElement('script');       
                         babylon_script.src = 'https://cdn.babylonjs.com/babylon.js';
                         babylon_script.onload = function(){
@@ -298,7 +285,7 @@ def on_ui_tabs():
                                     });
                                  
                                     window.addEventListener('resize', function() {
-                                        engine.resize();
+                                        engine.resize(); 
                                     });
                                 `
                                 document.head.appendChild(babylonCanvasScript);
@@ -317,7 +304,9 @@ def on_ui_tabs():
                         `
                         document.head.appendChild(babylonCanvasStyle);
                     }
-                ''')
+                ''') 
+                #- FIXME - Currently suffering from low resolution because this loads before the entire layout is complete. When the window is adjusted, it goes to full resolution.
+                #- FIXME - Objects currently are not being rendered with vertex colors/textures
 
             submit_preprocess.click(
                 fn=check_input_image, inputs=[input_image]
