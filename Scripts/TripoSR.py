@@ -229,12 +229,13 @@ def on_ui_tabs():
                 gr.HTML('''
                     <button id="my_btn">Hello</button>
                     <div id="result"></div>
+                    <canvas id="babylonCanvas"></canvas>
                 ''')
                 model_block.load(_js = '''
                     function test() {
-                        let script = document.createElement('script');
-                        script.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
-                        script.onload = function() {
+                        let jq_script = document.createElement('script');
+                        jq_script.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
+                        jq_script.onload = function() {
                             console.log('jQuery loaded successfully!');
                             // Add your jQuery code here
                             $(function() {
@@ -243,9 +244,67 @@ def on_ui_tabs():
                                 });
                             });
                         };
-                        document.head.appendChild(script);
+                        document.head.appendChild(jq_script);
+                                 
+                        let babylon_script = document.createElement('script');       
+                        babylon_script.src = 'https://cdn.babylonjs.com/babylon.js';
+                        babylon_script.onload = function(){};    
+                        document.head.appendChild(babylon_script);
+                                 
+                        let babylon_loaders_script = document.createElement('script');       
+                        babylon_loaders_script.src = 'https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js';
+                        babylon_loaders_script.onload = function(){};    
+                        document.head.appendChild(babylon_loaders_script);
+                                 
+                        let babylonCanvasStyle = document.createElement('style');
+                        babylonCanvasStyle.innerHTML = `
+                            #babylonCanvas {
+                                width: 100%;
+                                height: 100%;
+                                touch-action: none;
+                            }
+                        `
+                        document.head.appendChild(babylonCanvasStyle);
+                                 
+                        let babylonCanvasScript = document.createElement('script');
+                        babylonCanvasScript.innerHTML = `
+                            window.addEventListener('DOMContentLoaded', function() {
+                                var canvas = document.getElementById('renderCanvas');
+                                var engine = new BABYLON.Engine(canvas, true);
+
+                                var createScene = function() {
+                                    var scene = new BABYLON.Scene(engine);
+                                    scene.clearColor = new BABYLON.Color3.White();
+
+                                    var camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene);
+                                    camera.attachControl(canvas, true);
+
+                                    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+                                    light.intensity = 0.7;
+
+                                    // Load the OBJ file
+                                    BABYLON.SceneLoader.ImportMesh("", "", "your-obj-file-path.obj", scene, function (newMeshes) {
+                                        camera.target = newMeshes[0];
+                                    });
+
+                                    return scene;
+                                };
+
+                                var scene = createScene();
+
+                                engine.runRenderLoop(function() {
+                                    scene.render();
+                                });
+
+                                window.addEventListener('resize', function() {
+                                    engine.resize();
+                                });
+                            });
+                        `
+                        document.head.appendChild(babylonCanvasScript);
                     }
                 ''')
+                #! FIXME -- Uncaught TypeError: d.FlowGraphSceneReadyEventBlock is undefined
 
             submit_preprocess.click(
                 fn=check_input_image, inputs=[input_image]
