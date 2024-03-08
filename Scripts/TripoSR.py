@@ -239,6 +239,9 @@ def on_ui_tabs():
                             let babylon_loaders_script = document.createElement('script');       
                             babylon_loaders_script.src = 'https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js';
                             babylon_loaders_script.onload = function(){
+                                // Access OBJFileLoader through the BABYLON namespace and enable vertex colors
+                                BABYLON.OBJFileLoader.IMPORT_VERTEX_COLORS = true;
+                                 
                                 let babylonCanvasScript = document.createElement('script');
                                 babylonCanvasScript.innerHTML = `
                                     var canvas = document.getElementById('babylonCanvas');
@@ -257,7 +260,7 @@ def on_ui_tabs():
                                         camera.wheelPrecision = 50;
                                  
                                         var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-                                        light.intensity = 0.4;
+                                        light.intensity = 0.7;
                                  
                                         // Load the OBJ file
                                         BABYLON.SceneLoader.ImportMesh("", "", "file=extensions/TriposR-webui/test.obj", scene, function (newMeshes) {
@@ -268,10 +271,6 @@ def on_ui_tabs():
 
                                             // Apply a material to all loaded meshes that uses vertex colors
                                             newMeshes.forEach(mesh => {
-                                                var vertexColorMaterial = new BABYLON.StandardMaterial("vertexColorMaterial", scene);
-                                                vertexColorMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1); // White, assuming vertex colors are used
-                                                vertexColorMaterial.specularColor = new BABYLON.Color3(0, 0, 0); // Non-shiny surface
-                                                mesh.material = vertexColorMaterial;
                                                 mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
                                             });
                                         });
