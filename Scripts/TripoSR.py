@@ -260,7 +260,12 @@ def on_ui_tabs():
                                         camera.wheelPrecision = 50;
                                  
                                         var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-                                        light.intensity = 0.7;
+                                        light.intensity = 1;
+                                 
+                                        // Initialize GizmoManager here
+                                        var gizmoManager = new BABYLON.GizmoManager(scene);
+                                        gizmoManager.positionGizmoEnabled = true;
+                                        gizmoManager.rotationGizmoEnabled = true;
                                  
                                         // Load the OBJ file
                                         BABYLON.SceneLoader.ImportMesh("", "", "file=extensions/TriposR-webui/test.obj", scene, function (newMeshes) {
@@ -273,6 +278,11 @@ def on_ui_tabs():
                                             newMeshes.forEach(mesh => {
                                                 mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
                                             });
+
+                                            // Attach the first loaded mesh to the GizmoManager
+                                            if(newMeshes.length > 0) {
+                                                gizmoManager.attachToMesh(newMeshes[0]);
+                                            }
                                         });
                                  
                                         return scene;
