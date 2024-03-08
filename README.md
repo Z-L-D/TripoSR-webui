@@ -14,3 +14,4 @@ Future updates coming:
 * A button to save the current 3D view
 * A button to send the current 3D view to img2img
 * Provide the generated cutout mask to eventually perform a background recovery in img2img inpainting
+* A checkbox to allow for automatic saving into the output folder
