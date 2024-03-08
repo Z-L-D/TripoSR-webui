@@ -227,8 +227,6 @@ def on_ui_tabs():
                         elem_id="triposr_canvas"
                     )
                 gr.HTML('''
-                    <button id="my_btn">Hello</button>
-                    <div id="result"></div>
                     <canvas id="babylonCanvas"></canvas>
                     <button id="exportToPng">Export to PNG</button>
                 ''')
