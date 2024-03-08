@@ -118,6 +118,10 @@ def generate(image, resolution, threshold):
     mesh.export(mesh_path.name)
     return mesh_path.name
 
+def dummy_function():
+    # This function won't do anything but is needed to bind the button click event
+    pass
+
 def on_ui_tabs():
     with gr.Blocks() as model_block:
         with gr.Row(variant="panel"):
@@ -216,10 +220,32 @@ def on_ui_tabs():
                     submit = gr.Button("Generate", elem_id="generate", variant="primary")
 
             with gr.Column():
-                output_model = gr.Model3D(
-                    label="Output Model",
-                    interactive=False,
-                )
+                with gr.Row():
+                    output_model = gr.Model3D(
+                        label="Output Model",
+                        interactive=False,
+                        elem_id="triposr_canvas"
+                    )
+                gr.HTML('''
+                    <button id="my_btn">Hello</button>
+                    <div id="result"></div>
+                ''')
+                model_block.load(_js = '''
+                    function test() {
+                        let script = document.createElement('script');
+                        script.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
+                        script.onload = function() {
+                            console.log('jQuery loaded successfully!');
+                            // Add your jQuery code here
+                            $(function() {
+                                $("#my_btn").click(function() {
+                                    $("#result").text("Button clicked!");
+                                });
+                            });
+                        };
+                        document.head.appendChild(script);
+                    }
+                ''')
 
             submit_preprocess.click(
                 fn=check_input_image, inputs=[input_image]
