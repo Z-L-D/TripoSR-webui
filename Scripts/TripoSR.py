@@ -153,7 +153,7 @@ def generate(image, resolution, threshold):
     # Extract just the filename from the path
     filename = os.path.basename(mesh_path)
 
-    relative_mesh_path = "/output/TripoSR/" + filename
+    relative_mesh_path = "output/TripoSR/" + filename
 
     return mesh_path, relative_mesh_path
 
@@ -256,126 +256,149 @@ def on_ui_tabs():
                     submit = gr.Button("Generate", elem_id="generate", variant="primary")
 
             with gr.Column():
-                output_model = gr.Model3D(
-                    label="Output Model",
-                    interactive=False,
-                    elem_id="triposrCanvas"
-                )
+                with gr.Tabs():
+                    with gr.Tab("TripoSR Result"):
+                        output_model = gr.Model3D(
+                            label="Output Model",
+                            interactive=False,
+                            elem_id="triposrCanvas"
+                        )
 
-                obj_file_path = gr.Textbox(visible=True, elem_id="obj_file_path")  # Hidden textbox to pass the OBJ file path
+                        obj_file_path = gr.Textbox(visible=True, elem_id="obj_file_path")  # Hidden textbox to pass the OBJ file path
 
-                gr.HTML('''
-                    <canvas id="babylonCanvas"></canvas>
-                    <button id="exportToPng">Export to PNG</button>
-                ''')
-                
-                subject = gr.Textbox(placeholder="subject")
-                verb = gr.Radio(["ate", "loved", "hated"])
-                object = gr.Textbox(placeholder="object")
-                output = gr.Textbox(label="verb")
-                reverse_btn = gr.Button("Reverse sentence.")
-                reverse_btn.click(
-                    # None, [subject, verb, object], output, _js="(s, v, o) => o + ' ' + v + ' ' + s"
-                    None, [subject, verb, object], None, _js="(s, v, o) => { console.log(o + ' ' + v + ' ' + s); }"
-                )
+                    with gr.Tab("Test"):
+                        subject = gr.Textbox(placeholder="subject")
+                        verb = gr.Radio(["ate", "loved", "hated"])
+                        object = gr.Textbox(placeholder="object")
+                        output = gr.Textbox(label="verb")
+                        reverse_btn = gr.Button("Reverse sentence.")
+                        reverse_btn.click(
+                            # None, [subject, verb, object], output, _js="(s, v, o) => o + ' ' + v + ' ' + s"
+                            None, [subject, verb, object], None, _js='''
+                                (s, v, o) => { 
+                                    console.log(o + ' ' + v + ' ' + s); 
+                                }
+                            '''
+                        )
 
+                    with gr.Tab("PoSR"):
+                        gr.HTML('''
+                            <canvas id="babylonCanvas"></canvas>
+                            <button id="exportToPng">Export to PNG</button>
+                        ''')
 
-                # model_block.load(_js = '''
-                #     function test() {                                
-                #         let babylon_script = document.createElement('script');       
-                #         babylon_script.src = 'https://cdn.babylonjs.com/babylon.js';
-                #         babylon_script.onload = function(){
-                #             let babylon_loaders_script = document.createElement('script');       
-                #             babylon_loaders_script.src = 'https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js';
-                #             babylon_loaders_script.onload = function(){
-                #                 // Access OBJFileLoader through the BABYLON namespace and enable vertex colors
-                #                 BABYLON.OBJFileLoader.IMPORT_VERTEX_COLORS = true;
-                                 
-                #                 let babylonCanvasScript = document.createElement('script');
-                #                 babylonCanvasScript.innerHTML = `
-                #                     var canvas = document.getElementById('babylonCanvas');
-                #                     canvas.addEventListener('wheel', function(event) {
-                #                         event.preventDefault();
-                #                     }, { passive: false });
-                                 
-                #                     var engine = new BABYLON.Engine(canvas, true);
-                #                     var camera; 
-                                 
-                #                     var createScene = function() {
-                #                         var scene = new BABYLON.Scene(engine);
-                #                         scene.clearColor = new BABYLON.Color3.White();
-                                 
-                #                         camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene, 0.1, 10000);
-                #                         camera.attachControl(canvas, true);
-                #                         camera.wheelPrecision = 50;
-                                 
-                #                         var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-                #                         light.intensity = 1;
-                                 
-                #                         // Initialize GizmoManager here
-                #                         var gizmoManager = new BABYLON.GizmoManager(scene);
-                #                         gizmoManager.positionGizmoEnabled = true;
-                #                         gizmoManager.rotationGizmoEnabled = true;
-                                 
-                #                         // Load the OBJ file
-                #                         BABYLON.SceneLoader.ImportMesh("", "", "file=extensions/TriposR-webui/test.obj", scene, function (newMeshes) {
-                #                             camera.target = newMeshes[0];
-                                            
-                #                             // Define your desired scale factor
-                #                             var scaleFactor = 8; // Example: Scale up by a factor of 2
+                        model_block.load(
+                            _js = '''
+                                function babylonCanvasLoader() {                                
+                                    let babylon_script = document.createElement('script');       
+                                    babylon_script.src = 'https://cdn.babylonjs.com/babylon.js';
+                                    babylon_script.onload = function(){
+                                        let babylon_loaders_script = document.createElement('script');       
+                                        babylon_loaders_script.src = 'https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js';
+                                        babylon_loaders_script.onload = function(){
+                                            // Access OBJFileLoader through the BABYLON namespace and enable vertex colors
+                                            BABYLON.OBJFileLoader.IMPORT_VERTEX_COLORS = true;
+                                           
+                                            let babylonCanvasScript = document.createElement('script');
+                                            babylonCanvasScript.innerHTML = `
+                                                var canvas = document.getElementById('babylonCanvas');
+                                                canvas.addEventListener('wheel', function(event) {
+                                                    event.preventDefault();
+                                                }, { passive: false });
+                                           
+                                                var engine = new BABYLON.Engine(canvas, true);
+                                                var camera; 
+                                                var scene
+                                           
+                                                //var createScene = function(objFile) {
+                                                function createScene(objFile) {
+                                                    scene = new BABYLON.Scene(engine);
+                                                    scene.clearColor = new BABYLON.Color3.White();
+                                           
+                                                    camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene, 0.1, 10000);
+                                                    camera.attachControl(canvas, true);
+                                                    camera.wheelPrecision = 50;
+                                           
+                                                    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+                                                    light.intensity = 1;
+                                           
+                                                    // Initialize GizmoManager here
+                                                    var gizmoManager = new BABYLON.GizmoManager(scene);
+                                                    gizmoManager.positionGizmoEnabled = true;
+                                                    gizmoManager.rotationGizmoEnabled = true;
+                                           
+                                                    // Load the OBJ file
+                                                    //BABYLON.SceneLoader.ImportMesh("", "", "file=extensions/TriposR-webui/test.obj", scene, function (newMeshes) {
+                                                    BABYLON.SceneLoader.ImportMesh("", "", "file=" + objFile, scene, function (newMeshes) {
+                                                        camera.target = newMeshes[0];
+                                                      
+                                                        // Define your desired scale factor
+                                                        var scaleFactor = 8; // Example: Scale up by a factor of 2
+                                                        // Apply a material to all loaded meshes that uses vertex colors
+                                                        newMeshes.forEach(mesh => {
+                                                            mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
+                                                        });
+                                                        // Attach the first loaded mesh to the GizmoManager
+                                                        if(newMeshes.length > 0) {
+                                                            gizmoManager.attachToMesh(newMeshes[0]);
+                                                        }
+                                                    });
+                                           
+                                                    return scene;
+                                                };
+                                           
+                                                //var scene = createScene(objFile);
+                                                //engine.runRenderLoop(function() {
+                                                //    scene.render();
+                                                //});
+                                           
+                                                window.addEventListener('resize', function() {
+                                                    engine.resize(); 
+                                                });
+                                           
+                                                // Export to PNG button functionality
+                                                document.getElementById('exportToPng').addEventListener('click', function() {
+                                                    BABYLON.Tools.CreateScreenshotUsingRenderTarget(engine, camera, { width: 1024, height: 768 }, function(data) {
+                                                        // Create a link and set the URL as the data returned from CreateScreenshot
+                                                        var link = document.createElement('a');
+                                                        link.download = 'scene.png';
+                                                        link.href = data;
+                                                        link.click();
+                                                    });
+                                                });
+                                            `
+                                            document.head.appendChild(babylonCanvasScript);
+                                        };    
+                                        document.head.appendChild(babylon_loaders_script);
+                                    };    
+                                    document.head.appendChild(babylon_script);
+                                           
+                                    let babylonCanvasStyle = document.createElement('style');
+                                    babylonCanvasStyle.innerHTML = `
+                                        #babylonCanvas {
+                                            width: 100%;
+                                            height: 100%;
+                                            touch-action: none;
+                                        }
+                                    `
+                                    document.head.appendChild(babylonCanvasStyle);
+                                }
+                            '''
+                        )
+                        #- FIXME - Currently suffering from low resolution because this loads before the entire layout is complete. When the window is adjusted, it goes to full resolution.
 
-                #                             // Apply a material to all loaded meshes that uses vertex colors
-                #                             newMeshes.forEach(mesh => {
-                #                                 mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
-                #                             });
-
-                #                             // Attach the first loaded mesh to the GizmoManager
-                #                             if(newMeshes.length > 0) {
-                #                                 gizmoManager.attachToMesh(newMeshes[0]);
-                #                             }
-                #                         });
-                                 
-                #                         return scene;
-                #                     };
-                                 
-                #                     var scene = createScene();
-                #                     engine.runRenderLoop(function() {
-                #                         scene.render();
-                #                     });
-                                 
-                #                     window.addEventListener('resize', function() {
-                #                         engine.resize(); 
-                #                     });
-                                 
-                #                     // Export to PNG button functionality
-                #                     document.getElementById('exportToPng').addEventListener('click', function() {
-                #                         BABYLON.Tools.CreateScreenshotUsingRenderTarget(engine, camera, { width: 1024, height: 768 }, function(data) {
-                #                             // Create a link and set the URL as the data returned from CreateScreenshot
-                #                             var link = document.createElement('a');
-                #                             link.download = 'scene.png';
-                #                             link.href = data;
-                #                             link.click();
-                #                         });
-                #                     });
-                #                 `
-                #                 document.head.appendChild(babylonCanvasScript);
-                #             };    
-                #             document.head.appendChild(babylon_loaders_script);
-                #         };    
-                #         document.head.appendChild(babylon_script);
-                                 
-                #         let babylonCanvasStyle = document.createElement('style');
-                #         babylonCanvasStyle.innerHTML = `
-                #             #babylonCanvas {
-                #                 width: 100%;
-                #                 height: 100%;
-                #                 touch-action: none;
-                #             }
-                #         `
-                #         document.head.appendChild(babylonCanvasStyle);
-                #     }
-                # ''') 
-                #- FIXME - Currently suffering from low resolution because this loads before the entire layout is complete. When the window is adjusted, it goes to full resolution.
+                        console_btn = gr.Button("Console Log Path")
+                        console_btn.click(
+                            None, [obj_file_path], None, _js='''
+                                (objFilePath) => { 
+                                    console.log(objFilePath); 
+                                    createScene(objFilePath);
+                                    engine.runRenderLoop(function() {
+                                        scene.render();
+                                    });
+                                }
+                            '''
+                        )
                 
 
             submit_preprocess.click(
