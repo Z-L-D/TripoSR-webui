@@ -310,7 +310,6 @@ def on_ui_tabs():
                                                 var camera; 
                                                 var scene
                                            
-                                                //var createScene = function(objFile) {
                                                 function createScene(objFile) {
                                                     scene = new BABYLON.Scene(engine);
                                                     scene.clearColor = new BABYLON.Color3.White();
@@ -328,7 +327,6 @@ def on_ui_tabs():
                                                     gizmoManager.rotationGizmoEnabled = true;
                                            
                                                     // Load the OBJ file
-                                                    //BABYLON.SceneLoader.ImportMesh("", "", "file=extensions/TriposR-webui/test.obj", scene, function (newMeshes) {
                                                     BABYLON.SceneLoader.ImportMesh("", "", "file=" + objFile, scene, function (newMeshes) {
                                                         camera.target = newMeshes[0];
                                                       
