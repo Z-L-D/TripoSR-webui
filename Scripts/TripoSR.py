@@ -27,10 +27,12 @@ from PIL import Image
 from tsr.system import TSR
 from tsr.utils import remove_background, resize_foreground, to_gradio_3d_orientation
 
-if torch.cuda.is_available():
-    device = "cuda:0"
-else:
-    device = "cpu"
+# if torch.cuda.is_available():
+#     device = "cuda:0"
+# else:
+#     device = "cpu"
+
+device = "cpu"
 
 
 model_root = os.path.join(models_path, 'TripoSR')
@@ -38,7 +40,7 @@ os.makedirs(model_root, exist_ok=True)
 triposr_model_filenames = []
 
 def get_rembg_model_choices():
-    # List of available models. This could be dynamic based on downloaded models
+    # List of available models. 
     return [
         "dis_anime",
         "dis_general_use",
@@ -108,15 +110,6 @@ def preprocess(
         if image.mode == "RGBA":
             image = fill_background(image)
     return image
-
-
-# def generate(image, resolution, threshold):
-#     scene_codes = model(image, device=device)
-#     mesh = model.extract_mesh(scene_codes, resolution=int(resolution), threshold=float(threshold))[0]
-#     mesh = to_gradio_3d_orientation(mesh)
-#     mesh_path = tempfile.NamedTemporaryFile(suffix=".obj", delete=False)
-#     mesh.export(mesh_path.name)
-#     return mesh_path.name
 
 def generate_random_filename(extension=".txt"):
     timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -230,10 +223,17 @@ def on_ui_tabs():
                             fn=lambda: gr.update(choices=update_triposr_model_filenames),
                             inputs=[], outputs=filename
                         )
-                        resolution = gr.Slider(
-                            label="Resolution",
+                        # resolution = gr.Slider(
+                        #     label="Resolution",
+                        #     minimum=16,
+                        #     maximum=2048,
+                        #     value=256,
+                        #     step=16,
+                        # )
+                        resolution2 = gr.Slider(
+                            label="Resolution2",
                             minimum=16,
-                            maximum=512,
+                            maximum=2048,
                             value=256,
                             step=16,
                         )
@@ -264,7 +264,7 @@ def on_ui_tabs():
                             elem_id="triposrCanvas"
                         )
 
-                        obj_file_path = gr.Textbox(visible=True, elem_id="obj_file_path")  # Hidden textbox to pass the OBJ file path
+                        obj_file_path = gr.Textbox(visible=False, elem_id="obj_file_path")  # Hidden textbox to pass the OBJ file path
 
                     # with gr.Tab("Test"):
                     #     subject = gr.Textbox(placeholder="subject")
@@ -282,9 +282,21 @@ def on_ui_tabs():
                     #     )
 
                     with gr.Tab("PoSR"):
+                        load_obj_btn = gr.Button("Load Generated Model")
+                        load_obj_btn.click(
+                            None, [obj_file_path], None, _js='''
+                                (objFilePath) => { 
+                                    createScene(objFilePath);
+                                    engine.runRenderLoop(function() {
+                                        scene.render();
+                                    });
+                                    engine.resize(); 
+                                }
+                            '''
+                        )
+
                         gr.HTML('''
                             <canvas id="babylonCanvas"></canvas>
-                            <button id="exportToPng">Export to PNG</button>
                         ''')
 
                         model_block.load(
@@ -314,9 +326,21 @@ def on_ui_tabs():
                                                     scene = new BABYLON.Scene(engine);
                                                     scene.clearColor = new BABYLON.Color3.White();
                                            
-                                                    camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene, 0.1, 10000);
+                                                    camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene);
                                                     camera.attachControl(canvas, true);
+
+                                                    // Set mouse wheel precision for zoom control
                                                     camera.wheelPrecision = 50;
+
+                                                    // Custom input controls
+                                                    camera.inputs.removeByType("ArcRotateCameraPointersInput");
+                                                    var pointersInput = new BABYLON.ArcRotateCameraPointersInput();
+                                                    pointersInput.buttons = [0]; // Left mouse button for rotation
+                                                    pointersInput.panningMouseButton = [2]; // Right mouse button for panning
+                                                    pointersInput.angularSensibilityX = 1000;
+                                                    pointersInput.angularSensibilityY = 1000;
+                                                    pointersInput.panningSensibility = 1000; // Adjust panning sensitivity if needed
+                                                    camera.inputs.add(pointersInput);
                                            
                                                     var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
                                                     light.intensity = 1;
@@ -348,17 +372,6 @@ def on_ui_tabs():
                                                 window.addEventListener('resize', function() {
                                                     engine.resize(); 
                                                 });
-                                           
-                                                // Export to PNG button functionality
-                                                document.getElementById('exportToPng').addEventListener('click', function() {
-                                                    BABYLON.Tools.CreateScreenshotUsingRenderTarget(engine, camera, { width: 1024, height: 768 }, function(data) {
-                                                        // Create a link and set the URL as the data returned from CreateScreenshot
-                                                        var link = document.createElement('a');
-                                                        link.download = 'scene.png';
-                                                        link.href = data;
-                                                        link.click();
-                                                    });
-                                                });
                                             `
                                             document.head.appendChild(babylonCanvasScript);
                                         };    
@@ -379,15 +392,18 @@ def on_ui_tabs():
                             '''
                         )
 
-                        console_btn = gr.Button("Console Log Path")
-                        console_btn.click(
+                        save_png_btn = gr.Button("Save Current View to PNG")
+                        save_png_btn.click(
                             None, [obj_file_path], None, _js='''
                                 (objFilePath) => { 
-                                    createScene(objFilePath);
-                                    engine.runRenderLoop(function() {
-                                        scene.render();
+                                    // Export to PNG button functionality
+                                    BABYLON.Tools.CreateScreenshotUsingRenderTarget(engine, camera, { width: 1024, height: 768 }, function(data) {
+                                        // Create a link and set the URL as the data returned from CreateScreenshot
+                                        var link = document.createElement('a');
+                                        link.download = 'scene.png';
+                                        link.href = data;
+                                        link.click();
                                     });
-                                    engine.resize(); 
                                 }
                             '''
                         )
@@ -428,7 +444,7 @@ def on_ui_tabs():
                 outputs=[processed_image]
             ).success(
                 fn=generate,
-                inputs=[processed_image, resolution, threshold],
+                inputs=[processed_image, resolution2, threshold],
                 outputs=[output_model, obj_file_path]
             )
 

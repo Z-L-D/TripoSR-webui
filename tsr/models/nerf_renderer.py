@@ -23,7 +23,7 @@ class TriplaneNeRFRenderer(BaseModule):
         density_activation: str = "trunc_exp"
         density_bias: float = -1.0
         color_activation: str = "sigmoid"
-        num_samples_per_ray: int = 128
+        num_samples_per_ray: int = 192
         randomized: bool = False
 
     cfg: Config
