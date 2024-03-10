@@ -1,7 +1,3 @@
-import sys
-import pathlib
-sys.path.append(str(pathlib.Path(__file__).parent.parent))
-
 import torch
 import gradio as gr
 import os
@@ -9,16 +5,20 @@ import pathlib
 
 from modules import script_callbacks
 from modules.paths import models_path
+# from modules.paths import output_path  # Assuming output_path is correctly imported
+from modules.paths_internal import default_output_dir
 from modules.ui_common import ToolButton, refresh_symbol
 from modules.ui_components import ResizeHandleRow
 from modules import shared
 
 from modules_forge.forge_util import numpy_to_pytorch, pytorch_to_numpy
 from ldm_patched.modules.sd import load_checkpoint_guess_config
+from ldm_patched.modules import model_management
 
-# import logging
 import tempfile
-# import time
+import time
+import random
+import string
 
 import numpy as np
 import rembg
@@ -110,17 +110,53 @@ def preprocess(
     return image
 
 
+# def generate(image, resolution, threshold):
+#     scene_codes = model(image, device=device)
+#     mesh = model.extract_mesh(scene_codes, resolution=int(resolution), threshold=float(threshold))[0]
+#     mesh = to_gradio_3d_orientation(mesh)
+#     mesh_path = tempfile.NamedTemporaryFile(suffix=".obj", delete=False)
+#     mesh.export(mesh_path.name)
+#     return mesh_path.name
+
+def generate_random_filename(extension=".txt"):
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
+    filename = f"{timestamp}-{random_string}{extension}"
+    return filename
+
+def write_obj_to_triposr(obj_data, filename=None):
+    triposr_folder = os.path.join(default_output_dir, 'TripoSR')
+    os.makedirs(triposr_folder, exist_ok=True)  # Ensure the directory exists
+
+    if filename is None:
+        filename = generate_random_filename('.obj')  # Implement or use an existing function to generate a unique filename
+
+    full_path = os.path.join(triposr_folder, filename)
+
+    # Assuming obj_data is a string containing the OBJ file data
+    with open(full_path, 'w') as file:
+        file.write(obj_data)
+
+    return full_path
+
 def generate(image, resolution, threshold):
     scene_codes = model(image, device=device)
     mesh = model.extract_mesh(scene_codes, resolution=int(resolution), threshold=float(threshold))[0]
     mesh = to_gradio_3d_orientation(mesh)
-    mesh_path = tempfile.NamedTemporaryFile(suffix=".obj", delete=False)
-    mesh.export(mesh_path.name)
-    return mesh_path.name
+    
+    # Convert the mesh to a string or use a method to directly get the OBJ data
+    obj_data = mesh.export(file_type='obj')  # This line might need adjustment based on how your mesh object works
 
-def dummy_function():
-    # This function won't do anything but is needed to bind the button click event
-    pass
+    # Now save using the new function
+    mesh_path = write_obj_to_triposr(obj_data)  # You could specify a filename if you want
+
+    # Extract just the filename from the path
+    filename = os.path.basename(mesh_path)
+
+    relative_mesh_path = "/output/TripoSR/" + filename
+
+    return mesh_path, relative_mesh_path
+
 
 def on_ui_tabs():
     with gr.Blocks() as model_block:
@@ -220,112 +256,127 @@ def on_ui_tabs():
                     submit = gr.Button("Generate", elem_id="generate", variant="primary")
 
             with gr.Column():
-                with gr.Row():
-                    output_model = gr.Model3D(
-                        label="Output Model",
-                        interactive=False,
-                        elem_id="triposr_canvas"
-                    )
+                output_model = gr.Model3D(
+                    label="Output Model",
+                    interactive=False,
+                    elem_id="triposrCanvas"
+                )
+
+                obj_file_path = gr.Textbox(visible=True, elem_id="obj_file_path")  # Hidden textbox to pass the OBJ file path
+
                 gr.HTML('''
                     <canvas id="babylonCanvas"></canvas>
                     <button id="exportToPng">Export to PNG</button>
                 ''')
-                model_block.load(_js = '''
-                    function test() {                                
-                        let babylon_script = document.createElement('script');       
-                        babylon_script.src = 'https://cdn.babylonjs.com/babylon.js';
-                        babylon_script.onload = function(){
-                            let babylon_loaders_script = document.createElement('script');       
-                            babylon_loaders_script.src = 'https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js';
-                            babylon_loaders_script.onload = function(){
-                                // Access OBJFileLoader through the BABYLON namespace and enable vertex colors
-                                BABYLON.OBJFileLoader.IMPORT_VERTEX_COLORS = true;
+                
+                subject = gr.Textbox(placeholder="subject")
+                verb = gr.Radio(["ate", "loved", "hated"])
+                object = gr.Textbox(placeholder="object")
+                output = gr.Textbox(label="verb")
+                reverse_btn = gr.Button("Reverse sentence.")
+                reverse_btn.click(
+                    # None, [subject, verb, object], output, _js="(s, v, o) => o + ' ' + v + ' ' + s"
+                    None, [subject, verb, object], None, _js="(s, v, o) => { console.log(o + ' ' + v + ' ' + s); }"
+                )
+
+
+                # model_block.load(_js = '''
+                #     function test() {                                
+                #         let babylon_script = document.createElement('script');       
+                #         babylon_script.src = 'https://cdn.babylonjs.com/babylon.js';
+                #         babylon_script.onload = function(){
+                #             let babylon_loaders_script = document.createElement('script');       
+                #             babylon_loaders_script.src = 'https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js';
+                #             babylon_loaders_script.onload = function(){
+                #                 // Access OBJFileLoader through the BABYLON namespace and enable vertex colors
+                #                 BABYLON.OBJFileLoader.IMPORT_VERTEX_COLORS = true;
                                  
-                                let babylonCanvasScript = document.createElement('script');
-                                babylonCanvasScript.innerHTML = `
-                                    var canvas = document.getElementById('babylonCanvas');
-                                    canvas.addEventListener('wheel', function(event) {
-                                        event.preventDefault();
-                                    }, { passive: false });
+                #                 let babylonCanvasScript = document.createElement('script');
+                #                 babylonCanvasScript.innerHTML = `
+                #                     var canvas = document.getElementById('babylonCanvas');
+                #                     canvas.addEventListener('wheel', function(event) {
+                #                         event.preventDefault();
+                #                     }, { passive: false });
                                  
-                                    var engine = new BABYLON.Engine(canvas, true);
-                                    var camera; 
+                #                     var engine = new BABYLON.Engine(canvas, true);
+                #                     var camera; 
                                  
-                                    var createScene = function() {
-                                        var scene = new BABYLON.Scene(engine);
-                                        scene.clearColor = new BABYLON.Color3.White();
+                #                     var createScene = function() {
+                #                         var scene = new BABYLON.Scene(engine);
+                #                         scene.clearColor = new BABYLON.Color3.White();
                                  
-                                        camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene, 0.1, 10000);
-                                        camera.attachControl(canvas, true);
-                                        camera.wheelPrecision = 50;
+                #                         camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene, 0.1, 10000);
+                #                         camera.attachControl(canvas, true);
+                #                         camera.wheelPrecision = 50;
                                  
-                                        var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-                                        light.intensity = 1;
+                #                         var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+                #                         light.intensity = 1;
                                  
-                                        // Initialize GizmoManager here
-                                        var gizmoManager = new BABYLON.GizmoManager(scene);
-                                        gizmoManager.positionGizmoEnabled = true;
-                                        gizmoManager.rotationGizmoEnabled = true;
+                #                         // Initialize GizmoManager here
+                #                         var gizmoManager = new BABYLON.GizmoManager(scene);
+                #                         gizmoManager.positionGizmoEnabled = true;
+                #                         gizmoManager.rotationGizmoEnabled = true;
                                  
-                                        // Load the OBJ file
-                                        BABYLON.SceneLoader.ImportMesh("", "", "file=extensions/TriposR-webui/test.obj", scene, function (newMeshes) {
-                                            camera.target = newMeshes[0];
+                #                         // Load the OBJ file
+                #                         BABYLON.SceneLoader.ImportMesh("", "", "file=extensions/TriposR-webui/test.obj", scene, function (newMeshes) {
+                #                             camera.target = newMeshes[0];
                                             
-                                            // Define your desired scale factor
-                                            var scaleFactor = 8; // Example: Scale up by a factor of 2
+                #                             // Define your desired scale factor
+                #                             var scaleFactor = 8; // Example: Scale up by a factor of 2
 
-                                            // Apply a material to all loaded meshes that uses vertex colors
-                                            newMeshes.forEach(mesh => {
-                                                mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
-                                            });
+                #                             // Apply a material to all loaded meshes that uses vertex colors
+                #                             newMeshes.forEach(mesh => {
+                #                                 mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
+                #                             });
 
-                                            // Attach the first loaded mesh to the GizmoManager
-                                            if(newMeshes.length > 0) {
-                                                gizmoManager.attachToMesh(newMeshes[0]);
-                                            }
-                                        });
+                #                             // Attach the first loaded mesh to the GizmoManager
+                #                             if(newMeshes.length > 0) {
+                #                                 gizmoManager.attachToMesh(newMeshes[0]);
+                #                             }
+                #                         });
                                  
-                                        return scene;
-                                    };
+                #                         return scene;
+                #                     };
                                  
-                                    var scene = createScene();
-                                    engine.runRenderLoop(function() {
-                                        scene.render();
-                                    });
+                #                     var scene = createScene();
+                #                     engine.runRenderLoop(function() {
+                #                         scene.render();
+                #                     });
                                  
-                                    window.addEventListener('resize', function() {
-                                        engine.resize(); 
-                                    });
+                #                     window.addEventListener('resize', function() {
+                #                         engine.resize(); 
+                #                     });
                                  
-                                    // Export to PNG button functionality
-                                    document.getElementById('exportToPng').addEventListener('click', function() {
-                                        BABYLON.Tools.CreateScreenshotUsingRenderTarget(engine, camera, { width: 1024, height: 768 }, function(data) {
-                                            // Create a link and set the URL as the data returned from CreateScreenshot
-                                            var link = document.createElement('a');
-                                            link.download = 'scene.png';
-                                            link.href = data;
-                                            link.click();
-                                        });
-                                    });
-                                `
-                                document.head.appendChild(babylonCanvasScript);
-                            };    
-                            document.head.appendChild(babylon_loaders_script);
-                        };    
-                        document.head.appendChild(babylon_script);
+                #                     // Export to PNG button functionality
+                #                     document.getElementById('exportToPng').addEventListener('click', function() {
+                #                         BABYLON.Tools.CreateScreenshotUsingRenderTarget(engine, camera, { width: 1024, height: 768 }, function(data) {
+                #                             // Create a link and set the URL as the data returned from CreateScreenshot
+                #                             var link = document.createElement('a');
+                #                             link.download = 'scene.png';
+                #                             link.href = data;
+                #                             link.click();
+                #                         });
+                #                     });
+                #                 `
+                #                 document.head.appendChild(babylonCanvasScript);
+                #             };    
+                #             document.head.appendChild(babylon_loaders_script);
+                #         };    
+                #         document.head.appendChild(babylon_script);
                                  
-                        let babylonCanvasStyle = document.createElement('style');
-                        babylonCanvasStyle.innerHTML = `
-                            #babylonCanvas {
-                                width: 100%;
-                                height: 100%;
-                                touch-action: none;
-                            }
-                        `
-                        document.head.appendChild(babylonCanvasStyle);
-                    }
-                ''') 
+                #         let babylonCanvasStyle = document.createElement('style');
+                #         babylonCanvasStyle.innerHTML = `
+                #             #babylonCanvas {
+                #                 width: 100%;
+                #                 height: 100%;
+                #                 touch-action: none;
+                #             }
+                #         `
+                #         document.head.appendChild(babylonCanvasStyle);
+                #     }
+                # ''') 
                 #- FIXME - Currently suffering from low resolution because this loads before the entire layout is complete. When the window is adjusted, it goes to full resolution.
+                
 
             submit_preprocess.click(
                 fn=check_input_image, inputs=[input_image]
@@ -362,7 +413,7 @@ def on_ui_tabs():
             ).success(
                 fn=generate,
                 inputs=[processed_image, resolution, threshold],
-                outputs=[output_model]
+                outputs=[output_model, obj_file_path]
             )
 
     return [(model_block, "TripoSR", "TripoSR")]
