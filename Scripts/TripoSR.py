@@ -266,20 +266,20 @@ def on_ui_tabs():
 
                         obj_file_path = gr.Textbox(visible=True, elem_id="obj_file_path")  # Hidden textbox to pass the OBJ file path
 
-                    with gr.Tab("Test"):
-                        subject = gr.Textbox(placeholder="subject")
-                        verb = gr.Radio(["ate", "loved", "hated"])
-                        object = gr.Textbox(placeholder="object")
-                        output = gr.Textbox(label="verb")
-                        reverse_btn = gr.Button("Reverse sentence.")
-                        reverse_btn.click(
-                            # None, [subject, verb, object], output, _js="(s, v, o) => o + ' ' + v + ' ' + s"
-                            None, [subject, verb, object], None, _js='''
-                                (s, v, o) => { 
-                                    console.log(o + ' ' + v + ' ' + s); 
-                                }
-                            '''
-                        )
+                    # with gr.Tab("Test"):
+                    #     subject = gr.Textbox(placeholder="subject")
+                    #     verb = gr.Radio(["ate", "loved", "hated"])
+                    #     object = gr.Textbox(placeholder="object")
+                    #     output = gr.Textbox(label="verb")
+                    #     reverse_btn = gr.Button("Reverse sentence.")
+                    #     reverse_btn.click(
+                    #         # None, [subject, verb, object], output, _js="(s, v, o) => o + ' ' + v + ' ' + s"
+                    #         None, [subject, verb, object], None, _js='''
+                    #             (s, v, o) => { 
+                    #                 console.log(o + ' ' + v + ' ' + s); 
+                    #             }
+                    #         '''
+                    #     )
 
                     with gr.Tab("PoSR"):
                         gr.HTML('''
