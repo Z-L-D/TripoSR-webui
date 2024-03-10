@@ -345,11 +345,6 @@ def on_ui_tabs():
                                                     return scene;
                                                 };
                                            
-                                                //var scene = createScene(objFile);
-                                                //engine.runRenderLoop(function() {
-                                                //    scene.render();
-                                                //});
-                                           
                                                 window.addEventListener('resize', function() {
                                                     engine.resize(); 
                                                 });
@@ -383,20 +378,20 @@ def on_ui_tabs():
                                 }
                             '''
                         )
-                        #- FIXME - Currently suffering from low resolution because this loads before the entire layout is complete. When the window is adjusted, it goes to full resolution.
 
                         console_btn = gr.Button("Console Log Path")
                         console_btn.click(
                             None, [obj_file_path], None, _js='''
                                 (objFilePath) => { 
-                                    console.log(objFilePath); 
                                     createScene(objFilePath);
                                     engine.runRenderLoop(function() {
                                         scene.render();
                                     });
+                                    engine.resize(); 
                                 }
                             '''
                         )
+                        #- FIXME - Currently lose the gizmo tool when loading a second model into the scene. Likely need to reset the engine on each click of the button.
                 
 
             submit_preprocess.click(
