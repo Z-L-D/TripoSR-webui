@@ -42,13 +42,13 @@ def get_rembg_model_choices():
     return [
         "dis_anime",
         "dis_general_use",
-        "sam", #!- FIXME !!!!!!!!!! not currently working
         "silueta",
         "u2net_cloth_seg", 
         "u2net_human_seg", 
         "u2net", 
         "u2netp", 
     ]
+        # "sam", #- FIXME - not currently working
 
 def update_model_filenames():
     global triposr_model_filenames
@@ -325,6 +325,11 @@ def on_ui_tabs():
                                                 var scene
                                            
                                                 function createScene(objFile) {
+                                                    // Check if a scene already exists and dispose of it if it does
+                                                    if (window.scene) {
+                                                        window.scene.dispose();
+                                                    }
+
                                                     scene = new BABYLON.Scene(engine);
                                                     scene.clearColor = new BABYLON.Color3.White();
                                            
@@ -339,6 +344,7 @@ def on_ui_tabs():
                                                     var gizmoManager = new BABYLON.GizmoManager(scene);
                                                     gizmoManager.positionGizmoEnabled = true;
                                                     gizmoManager.rotationGizmoEnabled = true;
+                                                    gizmoManager.scaleRatio = 2
                                            
                                                     // Load the OBJ file
                                                     BABYLON.SceneLoader.ImportMesh("", "", "file=" + objFile, scene, function (newMeshes) {
@@ -383,6 +389,14 @@ def on_ui_tabs():
                             '''
                         )
 
+                        # scene_background_image = gr.Image(
+                        #     label="Scene Background",
+                        #     image_mode="RGBA",
+                        #     sources="upload",
+                        #     type="pil",
+                        #     elem_id="scene_background_image",
+                        # )
+                        
                         save_png_width = gr.Slider(
                             label="Image Width",
                             minimum=0,
@@ -397,8 +411,7 @@ def on_ui_tabs():
                             value=512,
                             step=1,
                         )
-                        
-
+                               
                         save_png_btn = gr.Button("Save Current View to PNG")
                         save_png_btn.click(
                             None, [obj_file_path, save_png_width, save_png_height], None, _js='''
@@ -413,9 +426,7 @@ def on_ui_tabs():
                                     });
                                 }
                             '''
-                        )
-                        #- FIXME - Currently lose the gizmo tool when loading a second model into the scene. Likely need to reset the engine on each click of the button.
-                
+                        )                
 
             submit_preprocess.click(
                 fn=check_input_image, inputs=[input_image]
