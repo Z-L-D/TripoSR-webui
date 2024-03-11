@@ -27,12 +27,10 @@ from PIL import Image
 from tsr.system import TSR
 from tsr.utils import remove_background, resize_foreground, to_gradio_3d_orientation
 
-# if torch.cuda.is_available():
-#     device = "cuda:0"
-# else:
-#     device = "cpu"
-
-device = "cpu"
+if torch.cuda.is_available():
+    device = "cuda:0"
+else:
+    device = "cpu"
 
 
 model_root = os.path.join(models_path, 'TripoSR')
@@ -167,6 +165,15 @@ def on_ui_tabs():
 
                 with gr.Row():
                     with gr.Group():
+                        # gr.Markdown("### **Device**\n")
+                        # gr.Radio(
+                        #     ["CUDA", "CPU"], 
+                        #     value="CUDA", 
+                        #     label=None, 
+                        #     show_label=False
+                        # ),
+                        # gr.Markdown("\n\n")
+
                         gr.Markdown("### **Preprocess Settings**\n")
                         rembg_model_dropdown = gr.Dropdown(
                             label="Cutout Model",
@@ -218,11 +225,6 @@ def on_ui_tabs():
                             label="TripoSR Checkpoint Filename",
                             choices=triposr_model_filenames,
                             value=triposr_model_filenames[0] if len(triposr_model_filenames) > 0 else None)
-                        refresh_button = ToolButton(value=refresh_symbol, tooltip="Refresh")
-                        refresh_button.click(
-                            fn=lambda: gr.update(choices=update_triposr_model_filenames),
-                            inputs=[], outputs=filename
-                        )
                         # resolution = gr.Slider(
                         #     label="Resolution",
                         #     minimum=16,
@@ -231,7 +233,7 @@ def on_ui_tabs():
                         #     step=16,
                         # )
                         resolution2 = gr.Slider(
-                            label="Resolution2",
+                            label="Mesh Resolution",
                             minimum=16,
                             maximum=2048,
                             value=256,
@@ -326,21 +328,9 @@ def on_ui_tabs():
                                                     scene = new BABYLON.Scene(engine);
                                                     scene.clearColor = new BABYLON.Color3.White();
                                            
-                                                    camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene);
+                                                    camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 0, 0), scene, 0.1, 10000);
                                                     camera.attachControl(canvas, true);
-
-                                                    // Set mouse wheel precision for zoom control
                                                     camera.wheelPrecision = 50;
-
-                                                    // Custom input controls
-                                                    camera.inputs.removeByType("ArcRotateCameraPointersInput");
-                                                    var pointersInput = new BABYLON.ArcRotateCameraPointersInput();
-                                                    pointersInput.buttons = [0]; // Left mouse button for rotation
-                                                    pointersInput.panningMouseButton = [2]; // Right mouse button for panning
-                                                    pointersInput.angularSensibilityX = 1000;
-                                                    pointersInput.angularSensibilityY = 1000;
-                                                    pointersInput.panningSensibility = 1000; // Adjust panning sensitivity if needed
-                                                    camera.inputs.add(pointersInput);
                                            
                                                     var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
                                                     light.intensity = 1;
@@ -352,7 +342,8 @@ def on_ui_tabs():
                                            
                                                     // Load the OBJ file
                                                     BABYLON.SceneLoader.ImportMesh("", "", "file=" + objFile, scene, function (newMeshes) {
-                                                        camera.target = newMeshes[0];
+                                                        //camera.target = newMeshes[0];
+                                                        camera.target = new BABYLON.Vector3(0, 0, 0); // Keeps the camera focused on the origin
                                                       
                                                         // Define your desired scale factor
                                                         var scaleFactor = 8; // Example: Scale up by a factor of 2
@@ -392,12 +383,28 @@ def on_ui_tabs():
                             '''
                         )
 
+                        save_png_width = gr.Slider(
+                            label="Image Width",
+                            minimum=0,
+                            maximum=2048,
+                            value=512,
+                            step=1,
+                        )
+                        save_png_height = gr.Slider(
+                            label="Image Height",
+                            minimum=0,
+                            maximum=2048,
+                            value=512,
+                            step=1,
+                        )
+                        
+
                         save_png_btn = gr.Button("Save Current View to PNG")
                         save_png_btn.click(
-                            None, [obj_file_path], None, _js='''
-                                (objFilePath) => { 
+                            None, [obj_file_path, save_png_width, save_png_height], None, _js='''
+                                (objFilePath, save_png_width, save_png_height) => { 
                                     // Export to PNG button functionality
-                                    BABYLON.Tools.CreateScreenshotUsingRenderTarget(engine, camera, { width: 1024, height: 768 }, function(data) {
+                                    BABYLON.Tools.CreateScreenshotUsingRenderTarget(engine, camera, { width: save_png_width, height: save_png_height }, function(data) {
                                         // Create a link and set the URL as the data returned from CreateScreenshot
                                         var link = document.createElement('a');
                                         link.download = 'scene.png';

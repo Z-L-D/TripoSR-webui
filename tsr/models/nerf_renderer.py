@@ -18,12 +18,11 @@ class TriplaneNeRFRenderer(BaseModule):
     @dataclass
     class Config(BaseModule.Config):
         radius: float
-
         feature_reduction: str = "concat"
         density_activation: str = "trunc_exp"
         density_bias: float = -1.0
         color_activation: str = "sigmoid"
-        num_samples_per_ray: int = 192
+        num_samples_per_ray: int = 128
         randomized: bool = False
 
     cfg: Config
