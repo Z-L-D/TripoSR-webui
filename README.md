@@ -48,3 +48,21 @@ In addition to the TripoSR rendering pipeline, there is also a provided feature 
 4. Select your output image size. This image will be height bound to the visible canvas on your screen. This means if it currently wider than it is tall, selecting a portrait resolution of 768x1024, will maintain the current appearance of the object between the upper and lower portions of the canvas, cropping the left and right portions of the present view. Selecting 2048x1024, will continue to maintain the current appearance of the object between the upper and lower portions of the canvas and will instead have very wide margins on either side of the object.
 5. Press the 'Save Current View to PNG' button. This will trigger an automatic download, either prompting you to select a location to save the file or more likely automatically downloading it to your selected downloads folder. You will need to navigate to this location to feed it into img2img.
 
+## Troubleshooting
+> AttributeError: module 'torchmcubes_module' has no attribute 'mcubes_cuda'
+
+or
+
+> torchmcubes was not compiled with CUDA support, use CPU version instead.
+
+This is because `torchmcubes` is compiled without CUDA support. Please make sure that 
+
+- The locally-installed CUDA major version matches the PyTorch-shipped CUDA major version. For example if you have CUDA 11.x installed, make sure to install PyTorch compiled with CUDA 11.x.
+- `setuptools>=49.6.0`. If not, upgrade by `pip install --upgrade setuptools`.
+
+Then re-install `torchmcubes` by:
+
+```sh
+pip uninstall torchmcubes
+pip install git+https://github.com/tatsy/torchmcubes.git
+```
