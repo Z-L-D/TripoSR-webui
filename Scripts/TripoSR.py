@@ -73,6 +73,10 @@ model.to(device)
 def check_input_image(input_image):
     if input_image is None:
         raise gr.Error("No image uploaded!")
+    
+def check_cutout_image(processed_image):
+    if processed_image is None:
+        raise gr.Error("No cutout image uploaded!")
 
 
 def preprocess(
@@ -131,6 +135,8 @@ def write_obj_to_triposr(obj_data, filename=None):
     return full_path
 
 def generate(image, resolution, threshold):
+    if image.mode == 'RGBA':
+        image = image.convert('RGB')
     scene_codes = model(image, device=device)
     mesh = model.extract_mesh(scene_codes, resolution=int(resolution), threshold=float(threshold))[0]
     mesh = to_gradio_3d_orientation(mesh)
@@ -154,15 +160,26 @@ def on_ui_tabs():
         with gr.Row(variant="panel"):
             with gr.Column():
                 with gr.Row():
-                    input_image = gr.Image(
-                        label="Input Image",
-                        image_mode="RGBA",
-                        sources="upload",
-                        type="pil",
-                        elem_id="content_image",
-                    )
-                    processed_image = gr.Image(label="Processed Image", interactive=False)
-
+                    with gr.Column():
+                        input_image = gr.Image(
+                            label="Input Image",
+                            image_mode="RGBA",
+                            sources="upload",
+                            type="pil",
+                            elem_id="content_image",
+                        )
+                        submit_preprocess = gr.Button("Preprocess Only", elem_id="preprocess", variant="secondary")
+                    with gr.Column():
+                        processed_image = gr.Image(
+                            label="Processed Image", 
+                            image_mode="RGBA",
+                            sources="upload",
+                            type="pil",
+                            elem_id="cutout_image",
+                        )
+                        submit_postprocess = gr.Button("Render Only", elem_id="postprocess", variant="secondary")
+                with gr.Row():
+                    submit = gr.Button("Generate", elem_id="generate", variant="primary")
                 with gr.Row():
                     with gr.Group():
                         # gr.Markdown("### **Device**\n")
@@ -215,8 +232,6 @@ def on_ui_tabs():
                             value=0,
                             step=1,
                         )
-                with gr.Row():
-                    submit_preprocess = gr.Button("Preprocess Only", elem_id="preprocess", variant="secondary")
                 gr.Markdown("\n")
                 with gr.Row():
                     with gr.Group():
@@ -253,10 +268,6 @@ def on_ui_tabs():
                             value=8192,
                             step=128,
                         )
-
-                with gr.Row():
-                    submit = gr.Button("Generate", elem_id="generate", variant="primary")
-
             with gr.Column():
                 with gr.Tabs():
                     with gr.Tab("TripoSR Result"):
@@ -443,6 +454,14 @@ def on_ui_tabs():
                     alpha_matting_erode_size
                 ],
                 outputs=[processed_image]
+            )
+
+            submit_postprocess.click(
+                fn=check_cutout_image, inputs=[processed_image]
+            ).success(
+                fn=generate,
+                inputs=[processed_image, resolution2, threshold],
+                outputs=[output_model, obj_file_path]
             )
             
             submit.click(

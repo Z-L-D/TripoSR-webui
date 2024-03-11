@@ -6,6 +6,8 @@ import onnxruntime as ort
 from PIL import Image
 from PIL.Image import Image as PILImage
 
+from modules.paths import models_path
+
 
 class BaseSession:
     """This is a base class for managing a session with a machine learning model."""
@@ -73,11 +75,14 @@ class BaseSession:
 
     @classmethod
     def u2net_home(cls, *args, **kwargs):
-        return os.path.expanduser(
-            os.getenv(
-                "U2NET_HOME", os.path.join(os.getenv("XDG_DATA_HOME", "~"), ".u2net")
-            )
-        )
+        # return os.path.expanduser(
+        #     os.getenv(
+        #         "U2NET_HOME", os.path.join(os.getenv("XDG_DATA_HOME", "~"), ".u2net")
+        #     )
+        # )
+        model_root = os.path.join(models_path, 'U2NET')
+        os.makedirs(model_root, exist_ok=True)
+        return model_root
 
     @classmethod
     def download_models(cls, *args, **kwargs):
