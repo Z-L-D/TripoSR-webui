@@ -17,14 +17,14 @@ git clone https://github.com/Z-L-D/TripoSR-webui
 
 ## Usage
 ![](triposr-webui-.png)
-There are multiple models used in this extension. The TripoSR model downloads automatically at installation and will likely be placed into the /models/diffusers/models--stabilityai--TripoSR folder but there will also be a reference file in /models/TripoSR. There will are also a number of background removal models that will download to /models/U2NET whenever they are used for the first time.
+There are multiple models used in this extension. The TripoSR model downloads automatically at installation and will likely be placed into the `/models/diffusers/models--stabilityai--TripoSR folder` but there will also be a reference file in `/models/TripoSR`. There will are also a number of background removal models that will download to `/models/U2NET` whenever they are used for the first time.
 
 TripoSR-webui has multiple modes of operation.
 
 ### Fully automatic - leave all settings as they are:
 1. Select an input image you would like to convert
-2. Press the generate button
-This will proceed to use all default options, which will often work well enough, and ultimately end up with a rendered model on the right side of the screen. The rendered OBJ is vertex colored and will automatically be saved into the /outputs/TripoSR folder.
+2. Press the 'Generate' button
+This will proceed to use all default options, which will often work well enough, and ultimately end up with a rendered model on the right side of the screen. The rendered OBJ is vertex colored and will automatically be saved into the `/outputs/TripoSR` folder.
 
 ### Fine grain control:
 1. Select an input image
