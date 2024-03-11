@@ -24,6 +24,7 @@ TripoSR-webui has multiple modes of operation.
 ### Fully automatic - leave all settings as they are:
 1. Select an input image you would like to convert
 2. Press the 'Generate' button
+
 This will proceed to use all default options, which will often work well enough, and ultimately end up with a rendered model on the right side of the screen. The rendered OBJ is vertex colored and will automatically be saved into the `/outputs/TripoSR` folder.
 
 ### Fine grain control:
@@ -32,6 +33,7 @@ This will proceed to use all default options, which will often work well enough,
 3. Fine tune the prepocess settings and repeat step 2 until you have reached a satisfying processed image cutout
 4. Fine tune the render settings
 5. Press the 'Render Only' button
+
 This provides a more fine grained iterative approach to generating the rendering. It is imperative that the image cutout is as clean cut around your intended object as possible. For example, if you are attempting to capture a toy train and the image cutout has left stray remnants of other objects in the image, it is far less likely to produce a satisfying coherent model than it otherwise would if the cutout was further cleaned. As such, its also important to note that the cutout models are not perfect and can often leave annoying unwanted stray remnants of other objects in the image cutout. If this is happening, you can save the current processed image cutout and further modify it to your liking in an image editor and upload it once again by dropping it into the 'Processed Image' box, replacing the original cutout image.
 
 ![](posr.png)
