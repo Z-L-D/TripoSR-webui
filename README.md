@@ -16,7 +16,7 @@ git clone https://github.com/Z-L-D/TripoSR-webui
 
 
 ## Usage
-![](triposr-webui.png)
+![](triposr-webui-.png)
 There are multiple models used in this extension. The TripoSR model downloads automatically at installation and will likely be placed into the /models/diffusers/models--stabilityai--TripoSR folder but there will also be a reference file in /models/TripoSR. There will are also a number of background removal models that will download to /models/U2NET whenever they are used for the first time.
 
 TripoSR-webui has multiple modes of operation.
