@@ -68,3 +68,7 @@ Then re-install `torchmcubes` by:
 pip uninstall torchmcubes
 pip install git+https://github.com/tatsy/torchmcubes.git
 ```
+
+=================================
+8GB - 
+10GB - 672

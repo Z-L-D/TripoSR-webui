@@ -71,7 +71,7 @@ triposr_model = TSR.from_pretrained(
 
 # adjust the chunk size to balance between speed and memory usage
 triposr_model.renderer.set_chunk_size(8192)
-# triposr_model.to(device) #- FIXME - Do not load model at start of program
+triposr_model.to(device) #- FIXME - Do not load model at start of program
 
 def remove_model_from_memory(model, device):
     # Delete the model
