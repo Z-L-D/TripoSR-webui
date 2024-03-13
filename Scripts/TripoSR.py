@@ -5,7 +5,6 @@ import pathlib
 
 from modules import script_callbacks
 from modules.paths import models_path
-# from modules.paths import output_path  # Assuming output_path is correctly imported
 from modules.paths_internal import default_output_dir
 from modules.ui_common import ToolButton, refresh_symbol
 from modules.ui_components import ResizeHandleRow
@@ -27,11 +26,17 @@ from PIL import Image
 from tsr.system import TSR
 from tsr.utils import remove_background, resize_foreground, to_gradio_3d_orientation
 
+import gc
+
+#===========================================================================================================
+#===========================================================================================================
+#=== MOVE TO SYSTEM OR UTILS ===============================================================================
+#===========================================================================================================
+
 if torch.cuda.is_available():
     device = "cuda:0"
 else:
     device = "cpu"
-
 
 model_root = os.path.join(models_path, 'TripoSR')
 os.makedirs(model_root, exist_ok=True)
@@ -58,17 +63,26 @@ def update_model_filenames():
     ]
     return triposr_model_filenames
 
-model = TSR.from_pretrained(
+triposr_model = TSR.from_pretrained(
     "stabilityai/TripoSR",
     config_name="config.yaml",
     weight_name="model.ckpt",
 )
 
 # adjust the chunk size to balance between speed and memory usage
-model.renderer.set_chunk_size(8192)
-model.to(device)
+triposr_model.renderer.set_chunk_size(8192)
+triposr_model.to(device) #- FIXME - Do not load model at start of program
 
-# rembg_session = rembg.new_session(model_name="dis_general_use")
+def remove_model_from_memory(model, device):
+    # Delete the model
+    del model
+    
+    # If the device is a CUDA device, clear the CUDA memory cache
+    if 'cuda' in device:
+        torch.cuda.empty_cache()
+    
+    # Collect garbage to free up memory
+    gc.collect()
 
 def check_input_image(input_image):
     if input_image is None:
@@ -77,7 +91,6 @@ def check_input_image(input_image):
 def check_cutout_image(processed_image):
     if processed_image is None:
         raise gr.Error("No cutout image uploaded!")
-
 
 def preprocess(
     input_image, 
@@ -137,8 +150,8 @@ def write_obj_to_triposr(obj_data, filename=None):
 def generate(image, resolution, threshold):
     if image.mode == 'RGBA':
         image = image.convert('RGB')
-    scene_codes = model(image, device=device)
-    mesh = model.extract_mesh(scene_codes, resolution=int(resolution), threshold=float(threshold))[0]
+    scene_codes = triposr_model(image, device=device)
+    mesh = triposr_model.extract_mesh(scene_codes, resolution=int(resolution), threshold=float(threshold))[0]
     mesh = to_gradio_3d_orientation(mesh)
     
     # Convert the mesh to a string or use a method to directly get the OBJ data
@@ -154,6 +167,21 @@ def generate(image, resolution, threshold):
 
     return mesh_path, relative_mesh_path
 
+def triposr_console_messaging(message):
+    if message == "prep-start":
+        print("TripoSR prepocessing has started.")
+    if message == "prep-end":
+        print("TripoSR prepocessing has finished.")
+    if message == "rend-start":
+        print("TripoSR rendering has started.")
+    if message == "rend-end":
+        print("TripoSR rendering has finished.")
+        
+
+#===========================================================================================================
+#===========================================================================================================
+#===========================================================================================================
+
 
 def on_ui_tabs():
     with gr.Blocks() as model_block:
@@ -168,7 +196,7 @@ def on_ui_tabs():
                             type="pil",
                             elem_id="content_image",
                         )
-                        submit_preprocess = gr.Button("Preprocess Only", elem_id="preprocess", variant="secondary")
+                        
                     with gr.Column():
                         processed_image = gr.Image(
                             label="Processed Image", 
@@ -177,20 +205,11 @@ def on_ui_tabs():
                             type="pil",
                             elem_id="cutout_image",
                         )
-                        submit_postprocess = gr.Button("Render Only", elem_id="postprocess", variant="secondary")
                 with gr.Row():
                     submit = gr.Button("Generate", elem_id="generate", variant="primary")
                 with gr.Row():
-                    with gr.Group():
-                        # gr.Markdown("### **Device**\n")
-                        # gr.Radio(
-                        #     ["CUDA", "CPU"], 
-                        #     value="CUDA", 
-                        #     label=None, 
-                        #     show_label=False
-                        # ),
-                        # gr.Markdown("\n\n")
-
+                    with gr.Column():
+                        submit_preprocess = gr.Button("Preprocess Only", elem_id="preprocess", variant="secondary")
                         gr.Markdown("### **Preprocess Settings**\n")
                         rembg_model_dropdown = gr.Dropdown(
                             label="Cutout Model",
@@ -232,9 +251,9 @@ def on_ui_tabs():
                             value=0,
                             step=1,
                         )
-                gr.Markdown("\n")
-                with gr.Row():
-                    with gr.Group():
+
+                    with gr.Column():
+                        submit_postprocess = gr.Button("Render Only", elem_id="postprocess", variant="secondary")
                         gr.Markdown("### **Render Settings**\n")
                         filename = gr.Dropdown(
                             label="TripoSR Checkpoint Filename",
@@ -268,6 +287,7 @@ def on_ui_tabs():
                             value=8192,
                             step=128,
                         )
+                        
             with gr.Column():
                 with gr.Tabs():
                     with gr.Tab("TripoSR Result"):
@@ -440,7 +460,8 @@ def on_ui_tabs():
                         )                
 
             submit_preprocess.click(
-                fn=check_input_image, inputs=[input_image]
+                fn=check_input_image, 
+                inputs=[input_image],
             ).success(
                 fn=preprocess,
                 inputs=[
@@ -457,7 +478,8 @@ def on_ui_tabs():
             )
 
             submit_postprocess.click(
-                fn=check_cutout_image, inputs=[processed_image]
+                fn=check_cutout_image, 
+                inputs=[processed_image]
             ).success(
                 fn=generate,
                 inputs=[processed_image, resolution2, threshold],
